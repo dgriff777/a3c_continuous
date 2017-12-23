@@ -22,7 +22,7 @@ This is continuous domain version of my other a3c repo. Here I show A3C can solv
 *When training model it is important to limit number of worker threads to number of cpu cores available as too many threads (e.g. more than one thread per cpu core available) will actually be detrimental in training speed and effectiveness*
 
 To train agent in BipedalWalker-v2 environment with 6 different worker threads:
-*On a MacPro 2014 laptop traing typically takes 10-15mins to get to a winning solution*
+*On a MacPro 2014 laptop traing typically takes 15-20mins to get to a winning solution*
 
 ```
 python main.py --workers 6 --env BipedalWalker-v2 --save-score-level 300 --model MLP --stack-frames 1
@@ -30,7 +30,7 @@ python main.py --workers 6 --env BipedalWalker-v2 --save-score-level 300 --model
 
 To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker threads:
 *BipedalWalkerHardcore-v2 is much harder environment compared to normal BipedalWalker*
-*On a 72 cpu core server training took a full 24hrs to get to model that could solve the environment*
+*On a 72 cpu AWS EC2 c5.18xlarge instance training took a full 24hrs to get to model that could solve the environment*
 
 ```
 python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-score-level 300 --model CONV --stack-frames 4
