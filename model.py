@@ -77,7 +77,7 @@ class A3C_MLP(torch.nn.Module):
         self.fc4 = nn.Linear(64, 64)
         self.lrelu4 = nn.LeakyReLU(0.1)
 
-        self.lstm = nn.LSTMCell(256, 128)
+        self.lstm = nn.LSTMCell(64, 128)
         num_outputs = action_space.shape[0]
         self.critic_linear = nn.Linear(128, 1)
         self.actor_linear = nn.Linear(128, num_outputs)
@@ -116,7 +116,6 @@ class A3C_MLP(torch.nn.Module):
         x = self.lrelu3(self.fc3(x))
         x = self.lrelu4(self.fc4(x))
 
-        x = x.view(-1, 256)
         hx, cx = self.lstm(x, (hx, cx))
         x = hx
 

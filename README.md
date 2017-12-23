@@ -25,7 +25,7 @@ To train agent in BipedalWalker-v2 environment with 6 different worker threads:
 *On a MacPro 2014 laptop traing typically takes 10-15mins to get to a winning solution*
 
 ```
-python main.py --workers 6 --env BipedalWalker-v2 --save-score-level 300 --model MLP --stack-frames 4
+python main.py --workers 6 --env BipedalWalker-v2 --save-score-level 300 --model MLP --stack-frames 1
 ```
 
 To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker threads:
