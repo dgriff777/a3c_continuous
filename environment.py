@@ -38,8 +38,8 @@ class frame_stack(gym.Wrapper):
 
 class MaxMinFilter():
     def __init__(self):
-		self.mx_d = 3.0
-		self.mn_d = -3.0
+		self.mx_d = 3.15
+		self.mn_d = -3.15
 		self.new_maxd = 10.0
 		self.new_mind = -10.0
 
