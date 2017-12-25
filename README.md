@@ -31,7 +31,7 @@ python main.py --workers 6 --env BipedalWalker-v2 --save-score-level 300 --model
 
 To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker threads:
 *BipedalWalkerHardcore-v2 is much harder environment compared to normal BipedalWalker*
-*On a 72 cpu AWS EC2 c5.18xlarge instance training took a full 24hrs to get to model that could solve the environment*
+*On a 72 cpu AWS EC2 c5.18xlarge instance training with 64 worker threads takes up to 48hrs to get to model that could solve the environment*
 
 ```
 python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-score-level 300 --model CONV --stack-frames 4
@@ -46,5 +46,11 @@ To run a 100 episode gym evaluation with trained model
 ```
 python gym_eval.py --env BipedalWalkerHardcore-v2 --num-episodes 100 --stack-frames 4 --model CONV --new-gym-eval True
 ```
+
+## Project Reference
+
+- https://github.com/ikostrikov/pytorch-a3c
+- https://github.com/andrewliao11/pytorch-a3c-mujoco
+
 
 ## README STILL UNDER CONSTRUCTION
