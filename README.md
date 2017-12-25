@@ -11,6 +11,7 @@ This repository includes my implementation with reinforcement learning using Asy
 
 This is continuous domain version of my other a3c repo. Here I show A3C can solve BipedalWalker-v2 but also the much harder BipedalWalkerHardcore-v2 version as well. "Solved" meaning to train a model capable of averaging reward over 300 for 100 consecutive episodes
 
+Added trained model for BipedWalkerHardcore-v2
 
 ## Requirements
 
