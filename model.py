@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from utils import norm_col_init, weights_init, weights_init_mlp
 
+
 class A3C_CONV(torch.nn.Module):
     def __init__(self, num_inputs, action_space):
         super(A3C_CONV, self).__init__()
@@ -30,7 +31,6 @@ class A3C_CONV(torch.nn.Module):
         self.conv2.weight.data.mul_(lrelu_gain)
         self.conv3.weight.data.mul_(lrelu_gain)
         self.conv4.weight.data.mul_(lrelu_gain)
-
 
         self.actor_linear.weight.data = norm_col_init(
             self.actor_linear.weight.data, 0.01)
@@ -62,7 +62,6 @@ class A3C_CONV(torch.nn.Module):
         x = hx
 
         return self.critic_linear(x), F.softsign(self.actor_linear(x)), self.actor_linear2(x), (hx, cx)
-
 
 
 class A3C_MLP(torch.nn.Module):
@@ -105,10 +104,9 @@ class A3C_MLP(torch.nn.Module):
 
         self.train()
 
-
     def forward(self, inputs):
         x, (hx, cx) = inputs
-        
+
         x = Variable(x, volatile=hx.volatile)
 
         x = self.lrelu1(self.fc1(x))
@@ -120,9 +118,3 @@ class A3C_MLP(torch.nn.Module):
         x = hx
 
         return self.critic_linear(x), F.softsign(self.actor_linear(x)), self.actor_linear2(x), (hx, cx)
-
-
-
-
-
-

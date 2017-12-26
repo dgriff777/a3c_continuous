@@ -9,6 +9,7 @@ from player_util import Agent
 from torch.autograd import Variable
 import gym
 
+
 def train(rank, args, shared_model, optimizer):
 
     torch.manual_seed(args.seed + rank)
@@ -22,11 +23,11 @@ def train(rank, args, shared_model, optimizer):
     env.seed(args.seed + rank)
     player = Agent(None, env, args, None)
     if args.model == 'MLP':
-        player.model = A3C_MLP(player.env.observation_space.shape[0], player.env.action_space)
+        player.model = A3C_MLP(
+            player.env.observation_space.shape[0], player.env.action_space)
     if args.model == 'CONV':
         player.model = A3C_CONV(args.stack_frames, player.env.action_space)
-            
-            
+
     player.state = player.env.reset()
     player.state = torch.from_numpy(player.state).float()
     player.model.train()
@@ -47,8 +48,8 @@ def train(rank, args, shared_model, optimizer):
 
         R = torch.zeros(1, 1)
         if not player.done:
-            state=player.state
-            value, _, _, _  = player.model(
+            state = player.state
+            value, _, _, _ = player.model(
                 (state, (player.hx, player.cx)))
             R = value.data
 
@@ -66,8 +67,10 @@ def train(rank, args, shared_model, optimizer):
             delta_t = player.rewards[i] + args.gamma * \
                 player.values[i + 1].data - player.values[i].data
             gae = gae * args.gamma * args.tau + delta_t
-            
-            policy_loss = policy_loss - (player.log_probs[i].sum() * Variable(gae)) - (0.01*player.entropies[i].sum())
+
+            policy_loss = policy_loss - \
+                (player.log_probs[i].sum() * Variable(gae)) - \
+                (0.01 * player.entropies[i].sum())
 
         optimizer.zero_grad()
         (policy_loss + 0.5 * value_loss).backward()

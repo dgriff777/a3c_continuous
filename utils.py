@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import json
 import logging
 
+
 def setup_logger(logger_name, log_file, level=logging.INFO):
     l = logging.getLogger(logger_name)
     formatter = logging.Formatter('%(asctime)s : %(message)s')
@@ -61,7 +62,8 @@ def weights_init_mlp(m):
     classname = m.__class__.__name__
     if classname.find('Linear') != -1:
         m.weight.data.normal_(0, 1)
-        m.weight.data *= 1 / torch.sqrt(m.weight.data.pow(2).sum(1, keepdim=True))
+        m.weight.data *= 1 / \
+            torch.sqrt(m.weight.data.pow(2).sum(1, keepdim=True))
         if m.bias is not None:
             m.bias.data.fill_(0)
 
@@ -70,6 +72,6 @@ pi = Variable(torch.FloatTensor([math.pi]))
 
 
 def normal(x, mu, sigma):
-    a = (-1*(Variable(x)-mu).pow(2)/(2*sigma)).exp()
-    b = 1/(2*sigma*pi.expand_as(sigma)).sqrt()
-    return a*b
+    a = (-1 * (Variable(x) - mu).pow(2) / (2 * sigma)).exp()
+    b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()
+    return a * b

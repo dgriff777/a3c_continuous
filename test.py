@@ -29,7 +29,8 @@ def test(args, shared_model):
     reward_total_sum = 0
     player = Agent(None, env, args, None)
     if args.model == 'MLP':
-        player.model = A3C_MLP(player.env.observation_space.shape[0], player.env.action_space)
+        player.model = A3C_MLP(
+            player.env.observation_space.shape[0], player.env.action_space)
     if args.model == 'CONV':
         player.model = A3C_CONV(args.stack_frames, player.env.action_space)
     player.state = player.env.reset()
@@ -39,8 +40,9 @@ def test(args, shared_model):
     while True:
         if player.done:
             player.model.load_state_dict(shared_model.state_dict())
-            
-        state, reward, player.done, player.info = player.env.step(player.action_test())
+
+        state, reward, player.done, player.info = player.env.step(
+            player.action_test())
         player.state = torch.from_numpy(state).float()
         player.eps_len += 1
         player.done = player.done or player.eps_len >= player.args.max_episode_length

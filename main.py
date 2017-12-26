@@ -123,7 +123,8 @@ if __name__ == '__main__':
 
     env = create_env(args.env, args)
     if args.model == 'MLP':
-        shared_model = A3C_MLP(env.observation_space.shape[0], env.action_space)
+        shared_model = A3C_MLP(
+            env.observation_space.shape[0], env.action_space)
     if args.model == 'CONV':
         shared_model = A3C_CONV(args.stack_frames, env.action_space)
     if args.load:
