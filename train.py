@@ -13,7 +13,7 @@ import gym
 
 def train(rank, args, shared_model, optimizer):
     ptitle('Training Agent: {}'.format(rank))
-    gpu_id = args.gpu_ids[rank%len(args.gpu_ids)]
+    gpu_id = args.gpu_ids[rank % len(args.gpu_ids)]
     torch.manual_seed(args.seed + rank)
     if gpu_id >= 0:
         torch.cuda.manual_seed(args.seed + rank)
@@ -69,8 +69,8 @@ def train(rank, args, shared_model, optimizer):
             R = torch.zeros(1, 1)
         if not player.done:
             state = player.state
-            if args.model=='CONV':
-                state=state.unsqueeze(0)
+            if args.model == 'CONV':
+                state = state.unsqueeze(0)
             value, _, _, _ = player.model(
                 (Variable(state), (player.hx, player.cx)))
             R = value.data
@@ -105,4 +105,3 @@ def train(rank, args, shared_model, optimizer):
         ensure_shared_grads(player.model, shared_model, gpu=gpu_id >= 0)
         optimizer.step()
         player.clear_actions()
-

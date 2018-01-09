@@ -70,7 +70,6 @@ def weights_init_mlp(m):
             m.bias.data.fill_(0)
 
 
-
 def normal(x, mu, sigma, gpu_id, gpu=False):
     pi = np.array([math.pi])
     pi = torch.from_numpy(pi).float()
@@ -82,4 +81,3 @@ def normal(x, mu, sigma, gpu_id, gpu=False):
     a = (-1 * (x - mu).pow(2) / (2 * sigma)).exp()
     b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()
     return a * b
-

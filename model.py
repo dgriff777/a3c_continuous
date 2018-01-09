@@ -116,4 +116,3 @@ class A3C_MLP(torch.nn.Module):
         x = hx
 
         return self.critic_linear(x), F.softsign(self.actor_linear(x)), self.actor_linear2(x), (hx, cx)
-
