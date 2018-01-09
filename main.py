@@ -48,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     '--num-steps',
     type=int,
-    default=20,
+    default=300,
     metavar='NS',
     help='number of forward steps in A3C (default: 300)')
 parser.add_argument(
@@ -75,7 +75,7 @@ parser.add_argument(
 parser.add_argument(
     '--save-score-level',
     type=int,
-    default=300,
+    default=20,
     metavar='SSL',
     help='reward score test evaluation must get higher than to save model')
 parser.add_argument(
