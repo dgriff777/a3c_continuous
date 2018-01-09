@@ -135,7 +135,7 @@ if __name__ == '__main__':
         args.gpu_ids = [-1]
     else:
         torch.cuda.manual_seed(args.seed)
-        mp.set_start_method('spawn')
+        mp.set_start_method('spawn') 
     env = create_env(args.env, args)
     if args.model == 'MLP':
         shared_model = A3C_MLP(
@@ -143,8 +143,7 @@ if __name__ == '__main__':
     if args.model == 'CONV':
         shared_model = A3C_CONV(args.stack_frames, env.action_space)
     if args.load:
-        saved_state = torch.load('{0}{1}.dat'.format(
-            args.load_model_dir, args.env), map_location=lambda storage, loc: storage)
+        saved_state = torch.load('{0}{1}.dat'.format(args.load_model_dir, args.env), map_location=lambda storage, loc: storage)
         shared_model.load_state_dict(saved_state)
     shared_model.share_memory()
 
@@ -152,8 +151,7 @@ if __name__ == '__main__':
         if args.optimizer == 'RMSprop':
             optimizer = SharedRMSprop(shared_model.parameters(), lr=args.lr)
         if args.optimizer == 'Adam':
-            optimizer = SharedAdam(
-                shared_model.parameters(), lr=args.lr, amsgrad=args.amsgrad)
+            optimizer = SharedAdam(shared_model.parameters(), lr=args.lr, amsgrad=args.amsgrad)
         optimizer.share_memory()
     else:
         optimizer = None
@@ -165,8 +163,7 @@ if __name__ == '__main__':
     processes.append(p)
     time.sleep(0.1)
     for rank in range(0, args.workers):
-        p = mp.Process(target=train, args=(
-            rank, args, shared_model, optimizer))
+        p = mp.Process(target=train, args=(rank, args, shared_model, optimizer))
         p.start()
         processes.append(p)
         time.sleep(0.1)

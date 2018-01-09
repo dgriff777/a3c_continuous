@@ -83,3 +83,4 @@ def test(args, shared_model):
             if gpu_id >= 0:
                 with torch.cuda.device(gpu_id):
                     player.state = player.state.cuda()
+
