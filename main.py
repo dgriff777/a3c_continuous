@@ -3,7 +3,7 @@ import os
 os.environ["OMP_NUM_THREADS"] = "1"
 import argparse
 import torch
-from torch.multiprocessing import Process
+import torch.multiprocessing as mp
 from environment import create_env
 from model import A3C_MLP, A3C_CONV
 from train import train
@@ -48,9 +48,9 @@ parser.add_argument(
 parser.add_argument(
     '--num-steps',
     type=int,
-    default=20,
+    default=300,
     metavar='NS',
-    help='number of forward steps in A3C (default: 20)')
+    help='number of forward steps in A3C (default: 300)')
 parser.add_argument(
     '--max-episode-length',
     type=int,
@@ -109,6 +109,18 @@ parser.add_argument(
     default=1,
     metavar='SF',
     help='Choose number of observations to stack')
+parser.add_argument(
+    '--gpu-ids',
+    type=int,
+    default=-1,
+    nargs='+',
+    help='GPUs to use [-1 CPU only] (default: -1)')
+parser.add_argument(
+    '--amsgrad',
+    default=True,
+    metavar='AM',
+    help='Adam optimizer amsgrad parameter')
+
 
 # Based on
 # https://github.com/pytorch/examples/tree/master/mnist_hogwild
@@ -118,18 +130,20 @@ parser.add_argument(
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    torch.set_default_tensor_type('torch.FloatTensor')
     torch.manual_seed(args.seed)
-
+    if args.gpu_ids == -1:
+        args.gpu_ids = [-1]
+    else:
+        torch.cuda.manual_seed(args.seed)
+        mp.set_start_method('spawn') 
     env = create_env(args.env, args)
     if args.model == 'MLP':
         shared_model = A3C_MLP(
-            env.observation_space.shape[0], env.action_space)
+            env.observation_space.shape[0], env.action_space, args.stack_frames)
     if args.model == 'CONV':
         shared_model = A3C_CONV(args.stack_frames, env.action_space)
     if args.load:
-        saved_state = torch.load(
-            '{0}{1}.dat'.format(args.load_model_dir, args.env))
+        saved_state = torch.load('{0}{1}.dat'.format(args.load_model_dir, args.env), map_location=lambda storage, loc: storage)
         shared_model.load_state_dict(saved_state)
     shared_model.share_memory()
 
@@ -137,20 +151,19 @@ if __name__ == '__main__':
         if args.optimizer == 'RMSprop':
             optimizer = SharedRMSprop(shared_model.parameters(), lr=args.lr)
         if args.optimizer == 'Adam':
-            optimizer = SharedAdam(shared_model.parameters(), lr=args.lr)
+            optimizer = SharedAdam(shared_model.parameters(), lr=args.lr, amsgrad=args.amsgrad)
         optimizer.share_memory()
     else:
         optimizer = None
 
     processes = []
 
-    p = Process(target=test, args=(args, shared_model))
+    p = mp.Process(target=test, args=(args, shared_model))
     p.start()
     processes.append(p)
     time.sleep(0.1)
     for rank in range(0, args.workers):
-        p = Process(
-            target=train, args=(rank, args, shared_model, optimizer))
+        p = mp.Process(target=train, args=(rank, args, shared_model, optimizer))
         p.start()
         processes.append(p)
         time.sleep(0.1)

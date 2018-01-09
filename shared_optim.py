@@ -172,3 +172,4 @@ class SharedAdam(optim.Optimizer):
                 p.data.addcdiv_(-step_size, exp_avg, denom)
 
         return loss
+

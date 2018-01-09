@@ -48,9 +48,7 @@ class A3C_CONV(torch.nn.Module):
         self.train()
 
     def forward(self, inputs):
-        inputs, (hx, cx) = inputs
-        inputs = inputs.unsqueeze(0)
-        x = Variable(inputs, volatile=hx.volatile)
+        x, (hx, cx) = inputs
 
         x = self.lrelu1(self.conv1(x))
         x = self.lrelu2(self.conv2(x))
@@ -65,7 +63,7 @@ class A3C_CONV(torch.nn.Module):
 
 
 class A3C_MLP(torch.nn.Module):
-    def __init__(self, num_inputs, action_space):
+    def __init__(self, num_inputs, action_space, n_frames):
         super(A3C_MLP, self).__init__()
         self.fc1 = nn.Linear(num_inputs, 128)
         self.lrelu1 = nn.LeakyReLU(0.1)
@@ -76,7 +74,8 @@ class A3C_MLP(torch.nn.Module):
         self.fc4 = nn.Linear(64, 64)
         self.lrelu4 = nn.LeakyReLU(0.1)
 
-        self.lstm = nn.LSTMCell(64, 128)
+        self.m1 = n_frames * 64
+        self.lstm = nn.LSTMCell(self.m1, 128)
         num_outputs = action_space.shape[0]
         self.critic_linear = nn.Linear(128, 1)
         self.actor_linear = nn.Linear(128, num_outputs)
@@ -107,14 +106,14 @@ class A3C_MLP(torch.nn.Module):
     def forward(self, inputs):
         x, (hx, cx) = inputs
 
-        x = Variable(x, volatile=hx.volatile)
-
         x = self.lrelu1(self.fc1(x))
         x = self.lrelu2(self.fc2(x))
         x = self.lrelu3(self.fc3(x))
         x = self.lrelu4(self.fc4(x))
 
+        x = x.view(1, self.m1)
         hx, cx = self.lstm(x, (hx, cx))
         x = hx
 
         return self.critic_linear(x), F.softsign(self.actor_linear(x)), self.actor_linear2(x), (hx, cx)
+

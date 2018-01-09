@@ -1,4 +1,4 @@
-## README STILL UNDER CONSTRUCTION
+## NEWLY ADDED A3C-GPU VERSION AS WELL!!
 
 
 # RL A3C Pytorch Continuous
@@ -36,6 +36,15 @@ To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker 
 ```
 python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-score-level 300 --model CONV --stack-frames 4
 ```
+
+#A3C-GPU
+
+To train agent in BipedalWalkerHardcore-v2 environment with 32 different worker threads with new A3C-GPU:
+
+```
+python main.py --env BipedalWalkerHardcore-v2 --workers 32 --gpu-ids 0 1 2 3 --amsgrad True --model CONV --stack-frames 4
+```
+
 
 Hit Ctrl C to end training session properly
 

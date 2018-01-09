@@ -32,12 +32,14 @@ def norm_col_init(weights, std=1.0):
     return x
 
 
-def ensure_shared_grads(model, shared_model):
-    for param, shared_param in zip(model.parameters(),
-                                   shared_model.parameters()):
-        if shared_param.grad is not None:
+def ensure_shared_grads(model, shared_model, gpu=False):
+    for param, shared_param in zip(model.parameters(), shared_model.parameters()):
+        if shared_param.grad is not None and not gpu:
             return
-        shared_param._grad = param.grad
+        if not gpu:
+            shared_param._grad = param.grad
+        else:
+            shared_param._grad = param.grad.clone().cpu()
 
 
 def weights_init(m):
@@ -68,10 +70,16 @@ def weights_init_mlp(m):
             m.bias.data.fill_(0)
 
 
-pi = Variable(torch.FloatTensor([math.pi]))
 
-
-def normal(x, mu, sigma):
-    a = (-1 * (Variable(x) - mu).pow(2) / (2 * sigma)).exp()
+def normal(x, mu, sigma, gpu_id, gpu=False):
+    pi = np.array([math.pi])
+    pi = torch.from_numpy(pi).float()
+    if gpu:
+        with torch.cuda.device(gpu_id):
+            pi = Variable(pi).cuda()
+    else:
+        pi = Variable(pi)
+    a = (-1 * (x - mu).pow(2) / (2 * sigma)).exp()
     b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()
     return a * b
+
