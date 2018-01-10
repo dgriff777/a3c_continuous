@@ -65,16 +65,16 @@ class A3C_CONV(torch.nn.Module):
 class A3C_MLP(torch.nn.Module):
     def __init__(self, num_inputs, action_space, n_frames):
         super(A3C_MLP, self).__init__()
-        self.fc1 = nn.Linear(num_inputs, 128)
+        self.fc1 = nn.Linear(num_inputs, 256)
         self.lrelu1 = nn.LeakyReLU(0.1)
-        self.fc2 = nn.Linear(128, 128)
+        self.fc2 = nn.Linear(256, 256)
         self.lrelu2 = nn.LeakyReLU(0.1)
-        self.fc3 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(256, 128)
         self.lrelu3 = nn.LeakyReLU(0.1)
-        self.fc4 = nn.Linear(64, 64)
+        self.fc4 = nn.Linear(128, 128)
         self.lrelu4 = nn.LeakyReLU(0.1)
 
-        self.m1 = n_frames * 64
+        self.m1 = n_frames * 128
         self.lstm = nn.LSTMCell(self.m1, 128)
         num_outputs = action_space.shape[0]
         self.critic_linear = nn.Linear(128, 1)
