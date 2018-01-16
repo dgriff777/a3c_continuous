@@ -7,6 +7,11 @@
 
 This repository includes my implementation with reinforcement learning using Asynchronous Advantage Actor-Critic (A3C) in Pytorch an algorithm from Google Deep Mind's paper "Asynchronous Methods for Deep Reinforcement Learning."
 
+# NEWLY ADDED A3G!!
+New implementation of A3C that utilizes GPU for speed increase in training. Which we can call **A3G**. A3G as opposed to other versions that try to utilize GPU with A3C algorithm, with A3G each agent has its own network maintained on GPU but shared model is on CPU and agent models are quickly converted to CPU to update shared model which allows updates to be frequent and fast by utilizing Hogwild Training and make updates to shared model asynchronously and without locks. This new method greatly increase training speed and models and can be see in my [rl_a3c_pytorch][55] repo that training that use to take days to train can be trained in as fast as 10minutes for some Atari games!
+
+[55]: https://github.com/dgriff777/rl_a3c_pytorch
+
 ### A3C LSTM
 
 This is continuous domain version of my other a3c repo. Here I show A3C can solve BipedalWalker-v2 but also the much harder BipedalWalkerHardcore-v2 version as well. "Solved" meaning to train a model capable of averaging reward over 300 for 100 consecutive episodes
