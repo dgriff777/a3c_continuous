@@ -73,11 +73,10 @@ parser.add_argument(
     metavar='L',
     help='load a trained model')
 parser.add_argument(
-    '--save-score-level',
-    type=int,
-    default=300,
-    metavar='SSL',
-    help='reward score test evaluation must get higher than to save model')
+    '--save-max',
+    default=True,
+    metavar='SM',
+    help='Save model on every test run high score matched or bested')
 parser.add_argument(
     '--optimizer',
     default='Adam',

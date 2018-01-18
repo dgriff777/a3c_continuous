@@ -66,6 +66,17 @@ parser.add_argument(
     default=False,
     metavar='NGE',
     help='Create a gym evaluation for upload')
+parser.add_argument(
+    '--seed',
+    type=int,
+    default=1,
+    metavar='S',
+    help='random seed (default: 1)')
+parser.add_argument(
+    '--gpu-id',
+    type=int,
+    default=-1,
+    help='GPU to use [-1 CPU only] (default: -1)')
 args = parser.parse_args()
 
 torch.set_default_tensor_type('torch.FloatTensor')
@@ -79,6 +90,13 @@ setup_logger('{}_mon_log'.format(args.env), r'{0}{1}_mon_log'.format(
     args.log_dir, args.env))
 log['{}_mon_log'.format(args.env)] = logging.getLogger(
     '{}_mon_log'.format(args.env))
+
+gpu_id = args.gpu_id
+
+torch.manual_seed(args.seed)
+if gpu_id >= 0:
+    torch.cuda.manual_seed(args.seed)
+
 
 d_args = vars(args)
 for k in d_args.keys():
@@ -97,11 +115,27 @@ if args.new_gym_eval:
     player.env = gym.wrappers.Monitor(
         player.env, "{}_monitor".format(args.env), force=True)
 
-player.model.eval()
+player.gpu_id = gpu_id
+if gpu_id >= 0:
+    with torch.cuda.device(gpu_id):
+        player.model = player.model.cuda()
+if args.new_gym_eval:
+    player.env = gym.wrappers.Monitor(
+        player.env, "{}_monitor".format(args.env), force=True)
 
+if gpu_id >= 0:
+    with torch.cuda.device(gpu_id):
+        player.model.load_state_dict(saved_state)
+else:
+    player.model.load_state_dict(saved_state)
+
+player.model.eval()
 for i_episode in range(args.num_episodes):
     player.state = player.env.reset()
     player.state = torch.from_numpy(player.state).float()
+    if gpu_id >= 0:
+        with torch.cuda.device(gpu_id):
+            player.state = player.state.cuda()
     player.eps_len = 0
     reward_sum = 0
     while True:
@@ -109,14 +143,8 @@ for i_episode in range(args.num_episodes):
             if i_episode % args.render_freq == 0:
                 player.env.render()
 
-        if player.done:
-            player.model.load_state_dict(saved_state)
-
-        state, reward, player.done, player.info = player.env.step(
-            player.action_test())
-        player.eps_len += 1
-        player.state = torch.from_numpy(state).float()
-        reward_sum += reward
+        player.action_test()
+        reward_sum += player.reward
 
         if player.done:
             num_tests += 1
