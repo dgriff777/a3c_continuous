@@ -1,5 +1,5 @@
-## NEWLY ADDED A3C-GPU VERSION AS WELL!!
-
+## NEWLY ADDED A3G A NEW GPU/CPU ARCHITECTURE OF A3C FOR SUBSTANTIALLY ACCELERATED TRAINING!!
+*Training with A3G benefits training speed most when using larger models i.e using raw pixels for observations such as training in atari environments that have raw pixels for state representation*
 
 # RL A3C Pytorch Continuous
 
