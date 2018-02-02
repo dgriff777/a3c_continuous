@@ -46,7 +46,18 @@ def train(rank, args, shared_model, optimizer):
                 player.model.load_state_dict(shared_model.state_dict())
         else:
             player.model.load_state_dict(shared_model.state_dict())
-
+        if player.done:
+            if gpu_id >= 0:
+                with torch.cuda.device(gpu_id):
+                    player.cx = Variable(torch.zeros(1, 512).cuda())
+                    player.hx = Variable(torch.zeros(1, 512).cuda())
+            else:
+                player.cx = Variable(torch.zeros(1, 512))
+                player.hx = Variable(torch.zeros(1, 512))
+        else:
+            player.cx = Variable(player.cx.data)
+            player.hx = Variable(player.hx.data)
+            
         for step in range(args.num_steps):
 
             player.action_train()
