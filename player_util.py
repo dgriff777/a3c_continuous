@@ -26,18 +26,6 @@ class Agent(object):
         self.gpu_id = -1
 
     def action_train(self):
-        if self.done:
-            if self.gpu_id >= 0:
-                with torch.cuda.device(self.gpu_id):
-                    self.cx = Variable(torch.zeros(1, 128).cuda())
-                    self.hx = Variable(torch.zeros(1, 128).cuda())
-            else:
-                self.cx = Variable(torch.zeros(1, 128))
-                self.hx = Variable(torch.zeros(1, 128))
-        else:
-            self.cx = Variable(self.cx.data)
-            self.hx = Variable(self.hx.data)
-
         if self.args.model == 'CONV':
             self.state = self.state.unsqueeze(0)
         value, mu, sigma, (self.hx, self.cx) = self.model(
