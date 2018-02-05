@@ -31,7 +31,7 @@ To train agent in BipedalWalker-v2 environment with 6 different worker threads:
 *On a MacPro 2014 laptop traing typically takes 15-20mins to get to a winning solution*
 
 ```
-python main.py --workers 6 --env BipedalWalker-v2 --save-score-level 300 --model MLP --stack-frames 1
+python main.py --workers 6 --env BipedalWalker-v2 --save-max True --model MLP --stack-frames 1
 ```
 
 To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker threads:
@@ -39,7 +39,7 @@ To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker 
 *On a 72 cpu AWS EC2 c5.18xlarge instance training with 64 worker threads takes up to 48hrs to get to model that could solve the environment*
 
 ```
-python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-score-level 300 --model CONV --stack-frames 4
+python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-max True --model CONV --stack-frames 4
 ```
 
 #A3C-GPU
