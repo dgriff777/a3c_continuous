@@ -111,10 +111,6 @@ if args.model == 'MLP':
 if args.model == 'CONV':
     player.model = A3C_CONV(args.stack_frames, env.action_space)
 
-if args.new_gym_eval:
-    player.env = gym.wrappers.Monitor(
-        player.env, "{}_monitor".format(args.env), force=True)
-
 player.gpu_id = gpu_id
 if gpu_id >= 0:
     with torch.cuda.device(gpu_id):
