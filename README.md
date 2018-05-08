@@ -25,7 +25,7 @@ Added trained model for BipedWalkerHardcore-v2
 - Pytorch
 
 ## Training
-*When training model it is important to limit number of worker processes to number of cpu cores available as too many processes (e.g. more than one thread per cpu core available) will actually be detrimental in training speed and effectiveness*
+*When training model it is important to limit number of worker processes to number of cpu cores available as too many processes (e.g. more than one process per cpu core available) will actually be detrimental in training speed and effectiveness*
 
 To train agent in BipedalWalker-v2 environment with 6 different worker processes:
 *On a MacPro 2014 laptop traing typically takes 15-20mins to get to a winning solution*
@@ -44,7 +44,7 @@ python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-max True --mod
 
 #A3C-GPU
 
-To train agent in BipedalWalkerHardcore-v2 environment with 32 different worker threads with new A3C-GPU:
+To train agent in BipedalWalkerHardcore-v2 environment with 32 different worker processes with new A3C-GPU:
 
 ```
 python main.py --env BipedalWalkerHardcore-v2 --workers 32 --gpu-ids 0 1 2 3 --amsgrad True --model CONV --stack-frames 4
