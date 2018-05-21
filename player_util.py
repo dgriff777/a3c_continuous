@@ -65,23 +65,24 @@ class Agent(object):
         return self
 
     def action_test(self):
-        if self.done:
-            if self.gpu_id >= 0:
-                with torch.cuda.device(self.gpu_id):
-                    self.cx = Variable(torch.zeros(
-                        1, 128).cuda(), volatile=True)
-                    self.hx = Variable(torch.zeros(
-                        1, 128).cuda(), volatile=True)
+        with torch.no_grad():
+            if self.done:
+                if self.gpu_id >= 0:
+                    with torch.cuda.device(self.gpu_id):
+                        self.cx = Variable(torch.zeros(
+                            1, 128).cuda())
+                        self.hx = Variable(torch.zeros(
+                            1, 128).cuda())
+                else:
+                    self.cx = Variable(torch.zeros(1, 128))
+                    self.hx = Variable(torch.zeros(1, 128))
             else:
-                self.cx = Variable(torch.zeros(1, 128), volatile=True)
-                self.hx = Variable(torch.zeros(1, 128), volatile=True)
-        else:
-            self.cx = Variable(self.cx.data, volatile=True)
-            self.hx = Variable(self.hx.data, volatile=True)
-        if self.args.model == 'CONV':
-            self.state = self.state.unsqueeze(0)
-        value, mu, sigma, (self.hx, self.cx) = self.model(
-            (Variable(self.state, volatile=True), (self.hx, self.cx)))
+                self.cx = Variable(self.cx.data)
+                self.hx = Variable(self.hx.data)
+            if self.args.model == 'CONV':
+                self.state = self.state.unsqueeze(0)
+            value, mu, sigma, (self.hx, self.cx) = self.model(
+                (Variable(self.state), (self.hx, self.cx)))
         mu = torch.clamp(mu.data, -1.0, 1.0)
         action = mu.cpu().numpy()[0]
         state, self.reward, self.done, self.info = self.env.step(action)
