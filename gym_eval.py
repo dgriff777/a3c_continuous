@@ -105,7 +105,7 @@ num_tests = 0
 reward_total_sum = 0
 player = Agent(None, env, args, None)
 if args.model == 'MLP':
-    player.model = A3C_MLP(env.observation_space.shape[0], env.action_space)
+    player.model = A3C_MLP(env.observation_space.shape[0], env.action_space, args.stack_frames)
 if args.model == 'CONV':
     player.model = A3C_CONV(args.stack_frames, env.action_space)
 
