@@ -23,6 +23,7 @@ Added trained model for BipedWalkerHardcore-v2
 - Python 2.7+
 - Openai Gym
 - Pytorch
+- setproctitle
 
 ## Training
 *When training model it is important to limit number of worker processes to number of cpu cores available as too many processes (e.g. more than one process per cpu core available) will actually be detrimental in training speed and effectiveness*
@@ -36,7 +37,7 @@ python main.py --workers 6 --env BipedalWalker-v2 --save-max True --model MLP --
 
 To train agent in BipedalWalkerHardcore-v2 environment with 64 different worker processes:
 *BipedalWalkerHardcore-v2 is much harder environment compared to normal BipedalWalker*
-*On a 72 cpu AWS EC2 c5.18xlarge instance training with 64 worker processes takes up to 48hrs to get to model that could solve the environment*
+*On a 72 cpu AWS EC2 c5.18xlarge instance training with 64 worker processes takes up to 24hrs to get to model that could solve the environment. Using enhanced A3G design, training model takes only 4-6hrs*
 
 ```
 python main.py --workers 64 --env BipedalWalkerHardcore-v2 --save-max True --model CONV --stack-frames 4
