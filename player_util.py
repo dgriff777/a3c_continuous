@@ -1,6 +1,10 @@
 from __future__ import division
-import math
+import os
+
+os.environ["OMP_NUM_THREADS"] = "1"
+from math import pi as PI
 import numpy as np
+from numpy import fromiter, float32
 import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -24,27 +28,25 @@ class Agent(object):
         self.info = None
         self.reward = 0
         self.gpu_id = -1
+        self.hidden_size = args.hidden_size
 
     def action_train(self):
-        if self.args.model == 'CONV':
-            self.state = self.state.unsqueeze(0)
-        value, mu, sigma, (self.hx, self.cx) = self.model(
-            (Variable(self.state), (self.hx, self.cx)))
+        value, mu, sigma, self.hx, self.cx = self.model(
+            self.state.unsqueeze(0), self.hx, self.cx
+        )
         mu = torch.clamp(mu, -1.0, 1.0)
         sigma = F.softplus(sigma) + 1e-5
-        eps = torch.randn(mu.size())
-        pi = np.array([math.pi])
-        pi = torch.from_numpy(pi).float()
+        pi = np.array([PI])
         if self.gpu_id >= 0:
             with torch.cuda.device(self.gpu_id):
-                eps = Variable(eps).cuda()
-                pi = Variable(pi).cuda()
+                eps = torch.randn(mu.size()).float().cuda()
+                pi = torch.from_numpy(pi).float().cuda()
         else:
-            eps = Variable(eps)
-            pi = Variable(pi)
+            eps = torch.randn(mu.size()).float()
+            pi = torch.from_numpy(pi).float()
 
         action = (mu + sigma.sqrt() * eps).data
-        act = Variable(action)
+        act = action
         prob = normal(act, mu, sigma, self.gpu_id, gpu=self.gpu_id >= 0)
         action = torch.clamp(action, -1.0, 1.0)
         entropy = 0.5 * ((sigma * 2 * pi.expand_as(sigma)).log() + 1)
@@ -52,12 +54,14 @@ class Agent(object):
         log_prob = (prob + 1e-6).log()
         self.log_probs.append(log_prob)
         state, reward, self.done, self.info = self.env.step(
-            action.cpu().numpy()[0])
+            fromiter(action.tolist()[0], dtype=float32)
+        )  # faster than action.cpu().numpy()[0])
         reward = max(min(float(reward), 1.0), -1.0)
-        self.state = torch.from_numpy(state).float()
         if self.gpu_id >= 0:
             with torch.cuda.device(self.gpu_id):
-                self.state = self.state.cuda()
+                self.state = torch.from_numpy(state).float().cuda()
+        else:
+            self.state = torch.from_numpy(state).float()
         self.eps_len += 1
         self.done = self.done or self.eps_len >= self.args.max_episode_length
         self.values.append(value)
@@ -69,27 +73,24 @@ class Agent(object):
             if self.done:
                 if self.gpu_id >= 0:
                     with torch.cuda.device(self.gpu_id):
-                        self.cx = Variable(torch.zeros(
-                            1, 128).cuda())
-                        self.hx = Variable(torch.zeros(
-                            1, 128).cuda())
+                        self.cx = torch.zeros(1, self.hidden_size).cuda()
+                        self.hx = torch.zeros(1, self.hidden_size).cuda()
                 else:
-                    self.cx = Variable(torch.zeros(1, 128))
-                    self.hx = Variable(torch.zeros(1, 128))
-            else:
-                self.cx = Variable(self.cx.data)
-                self.hx = Variable(self.hx.data)
-            if self.args.model == 'CONV':
-                self.state = self.state.unsqueeze(0)
-            value, mu, sigma, (self.hx, self.cx) = self.model(
-                (Variable(self.state), (self.hx, self.cx)))
-        mu = torch.clamp(mu.data, -1.0, 1.0)
-        action = mu.cpu().numpy()[0]
-        state, self.reward, self.done, self.info = self.env.step(action)
-        self.state = torch.from_numpy(state).float()
+                    self.cx = torch.zeros(1, self.hidden_size)
+                    self.hx = torch.zeros(1, self.hidden_size)
+
+            value, mu, sigma, self.hx, self.cx = self.model(
+                self.state.unsqueeze(0), self.hx, self.cx
+            )
+            mu = torch.clamp(mu, -1.0, 1.0)
+        state, self.reward, self.done, self.info = self.env.step(
+            fromiter(mu.tolist()[0], dtype=float32)
+        )
         if self.gpu_id >= 0:
             with torch.cuda.device(self.gpu_id):
-                self.state = self.state.cuda()
+                self.state = torch.from_numpy(state).float().cuda()
+        else:
+            self.state = torch.from_numpy(state).float()
         self.eps_len += 1
         self.done = self.done or self.eps_len >= self.args.max_episode_length
         return self
