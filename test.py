@@ -25,7 +25,6 @@ def test(args, shared_model):
     for k in d_args.keys():
         log.info(f"{k}: {d_args[k]}")
 
-    dt2 = {k: v for k, v in list(d_args.items())[:9]}
     torch.manual_seed(args.seed)
     if gpu_id >= 0:
         torch.cuda.manual_seed(args.seed)
@@ -43,13 +42,6 @@ def test(args, shared_model):
     if args.model == "CONV":
         player.model = A3C_CONV(args.stack_frames, player.env.action_space, args)
 
-    player.state = player.env.reset()
-    if gpu_id >= 0:
-        with torch.cuda.device(gpu_id):
-            player.model = player.model.cuda()
-            player.state = torch.from_numpy(player.state).float().cuda()
-    else:
-        player.state = torch.from_numpy(player.state).float()
     if args.tensorboard_logger:
         from torch.utils.tensorboard import SummaryWriter
 
@@ -68,6 +60,15 @@ def test(args, shared_model):
         writer = SummaryWriter(f"runs/{args.env}_training")
         writer.add_graph(player.model, dummy_input, False)
         writer.close()
+
+    player.state = player.env.reset()
+    if gpu_id >= 0:
+        with torch.cuda.device(gpu_id):
+            player.model = player.model.cuda()
+            player.state = torch.from_numpy(player.state).float().cuda()
+    else:
+        player.state = torch.from_numpy(player.state).float()
+
     player.model.eval()
     max_score = 0
     try:
