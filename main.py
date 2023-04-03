@@ -22,14 +22,14 @@ parser.add_argument(
     "--entropy-coef",
     type=float,
     default=0.01,
-    help="entropy coefficient (default: 0.01)",
+    help="entropy loss coefficient (default: 0.01)",
 )
 parser.add_argument(
     "-vc",
     "--value-coef",
     type=float,
     default=0.5,
-    help="entropy coefficient (default: 0.5)",
+    help="value loss coefficient (default: 0.5)",
 )
 parser.add_argument(
     "-g",
