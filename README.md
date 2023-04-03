@@ -24,7 +24,7 @@ Added trained model for BipedWalkerHardcore-v3
 
 - Python 2.7+
 - openai gym<=0.19.0
-- Pytorch
+- Pytorch (Pytorch 2.0 has a bug where it incorrectly occupies GPU memory on all GPUs being used when backward() is called on training processes. This does not slow down training but it does unnecesarily take up a lot of gpu memory. If this is problem for you and running out of gpu memory downgrade pytorch)
 - setproctitle
 
 ## Training
