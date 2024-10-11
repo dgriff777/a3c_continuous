@@ -1,130 +1,122 @@
-from __future__ import division
 import os
-
 os.environ["OMP_NUM_THREADS"] = "1"
 from setproctitle import setproctitle as ptitle
 import numpy as np
 import torch
 from environment import create_env
-from utils import setup_logger
 from model import A3C_CONV, A3C_MLP
-from player_util import Agent
-from torch.autograd import Variable
+from player_util import Agent, Evaluator
+from numpy.random import PCG64DXSM, RandomState
 import time
-import logging
-import gym
-import copy
+from collections import deque
+from utils import setup_spdlogger
+import crayons
 
 
 def test(args, shared_model):
     ptitle("Test Agent")
     gpu_id = args.gpu_ids[-1]
-    setup_logger(f"{args.env}_log", rf"{args.log_dir}{args.env}_log")
-    log = logging.getLogger(f"{args.env}_log")
+    USE_GPU = gpu_id >= 0
+    if USE_GPU:
+        dev = torch.device(f"cuda:{gpu_id}")
+    else:
+        dev = torch.device("cpu")
+
+    rng = RandomState(PCG64DXSM())
+    seed = rng.randint(2147483647)
+    torch.manual_seed(seed)
+    if USE_GPU:
+        torch.cuda.manual_seed(seed)
+
+    log = setup_spdlogger(args)
     d_args = vars(args)
     for k in d_args.keys():
         log.info(f"{k}: {d_args[k]}")
 
-    torch.manual_seed(args.seed)
-    if gpu_id >= 0:
-        torch.cuda.manual_seed(args.seed)
     env = create_env(args.env, args)
     reward_sum = 0
-    start_time = time.time()
     num_tests = 0
-    reward_total_sum = 0
-    player = Agent(None, env, args, None)
-    player.gpu_id = gpu_id
+    player = Agent(env, args, args.seed, gpu_id)
     if args.model == "MLP":
-        player.model = A3C_MLP(
-            player.env.observation_space.shape[0], player.env.action_space, args
-        )
+        model = A3C_MLP(env.observation_space.shape[0], env.action_space, args)
+
     if args.model == "CONV":
-        player.model = A3C_CONV(args.stack_frames, player.env.action_space, args)
+        model = A3C_CONV(1, env.action_space, args)
 
     if args.tensorboard_logger:
         from torch.utils.tensorboard import SummaryWriter
 
         if args.model == "CONV":
-            dummy_input = (
-                torch.zeros(1, args.stack_frames, 24),
-                torch.zeros(1, args.hidden_size),
-                torch.zeros(1, args.hidden_size),
-            )
+            dummy_input = (torch.zeros(1, 24), torch.zeros(1, args.hidden_size), torch.zeros(1, args.hidden_size))
+
         if args.model == "MLP":
-            dummy_input = (
-                torch.zeros(1, args.stack_frames, 24),
-                torch.zeros(1, args.hidden_size),
-                torch.zeros(1, args.hidden_size),
-            )
+            dummy_input = (torch.zeros(1, 24), torch.zeros(1, args.hidden_size), torch.zeros(1, args.hidden_size))
+
         writer = SummaryWriter(f"runs/{args.env}_training")
-        writer.add_graph(player.model, dummy_input, False)
+        writer.add_graph(model, dummy_input, False)
         writer.close()
 
-    player.state = player.env.reset()
-    if gpu_id >= 0:
-        with torch.cuda.device(gpu_id):
-            player.model = player.model.cuda()
-            player.state = torch.from_numpy(player.state).float().cuda()
+    if args.load_rms_data:
+        env.load_running_average("rms_data")
+        env.set_training_off()
     else:
-        player.state = torch.from_numpy(player.state).float()
+        env.reset_running_stats("rms_data")
+        env.set_training_on()
 
-    player.model.eval()
-    max_score = 0
+    state, info = env.reset(seed=args.seed + seed)
+    state = torch.from_numpy(state).to(device=dev)
+    model = model.to(device=dev)
+    model.eval()
+    playerEval = Evaluator(env.env._max_episode_steps, env, log, args, gpu_id)
+    TEST = 1
+    done = True
+    action_test = player.action_test
     try:
-        while 1:
-            if player.done:
-                if gpu_id >= 0:
-                    with torch.cuda.device(gpu_id):
-                        player.model.load_state_dict(shared_model.state_dict())
-                else:
-                    player.model.load_state_dict(shared_model.state_dict())
+        while TEST:
+            if done and playerEval.loadNew:
+                model.load_state_dict(shared_model.state_dict())
 
-            player.action_test()
-            reward_sum += player.reward
+            reward_sum, done = action_test(state, model, playerEval.env)
 
-            if player.done:
+            if done:
                 num_tests += 1
-                reward_total_sum += reward_sum
-                reward_mean = reward_total_sum / num_tests
-                log.info(
-                    f'Time {time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time))}, episode reward {reward_sum}, episode length {player.eps_len}, reward mean {reward_mean:.4f}'
+                playerEval.score_list.append(reward_sum)
+                playerEval.log.info(
+                    f'Time: {time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - playerEval.start_time))}, episode_reward: {reward_sum:.2f}, episode_length: {player.eps_len}, reward_mean: {np.mean(playerEval.score_list):.2f}'
                 )
                 if args.tensorboard_logger:
-                    writer.add_scalar(
-                        f"{args.env}_Episode_Rewards", reward_sum, num_tests
-                    )
-                    for name, weight in player.model.named_parameters():
+                    writer.add_scalar(f"{args.env}_Episode_Rewards", round(reward_sum, 2), num_tests)
+                    for name, weight in model.named_parameters():
                         writer.add_histogram(name, weight, num_tests)
-                if (args.save_max and reward_sum >= max_score) or not args.save_max:
-                    if reward_sum >= max_score:
-                        max_score = reward_sum
-                    if gpu_id >= 0:
-                        with torch.cuda.device(gpu_id):
-                            state_to_save = player.model.state_dict()
-                            torch.save(
-                                state_to_save, f"{args.save_model_dir}{args.env}.dat"
-                            )
-                    else:
-                        state_to_save = player.model.state_dict()
-                        torch.save(
-                            state_to_save, f"{args.save_model_dir}{args.env}.dat"
-                        )
 
-                reward_sum = 0
+                if not playerEval.test_model_success and playerEval.shortTestNum == 0 and playerEval.testNumber == 0:
+                    if USE_GPU:
+                        with torch.cuda.device(gpu_id):
+                            state_to_save = model.state_dict()
+                            torch.save(state_to_save, f"{args.save_model_dir}{args.env}.dat")
+                    else:
+                        state_to_save = model.state_dict()
+                        torch.save(state_to_save, f"{args.save_model_dir}{args.env}.dat")
+
                 player.eps_len = 0
-                state = player.env.reset()
-                time.sleep(60)
-                if gpu_id >= 0:
-                    with torch.cuda.device(gpu_id):
-                        player.state = torch.from_numpy(state).float().cuda()
-                else:
-                    player.state = torch.from_numpy(state).float()
+                playerEval.runningStatsUpdate(model)
+                if args.stop_when_solved and playerEval.test_model_success:
+                    TEST = 0
+
+                state, info = playerEval.env.reset(seed=rng.randint(2147483647))
+                state = torch.from_numpy(state).to(device=dev)
+                time.sleep(playerEval.breakTime)
 
     except KeyboardInterrupt:
         time.sleep(0.01)
-        print("KeyboardInterrupt exception is caught")
+        TEST = 0
+        print(f"{crayons.yellow('KeyboardInterrupt exception is caught', bold=True)}")
+    except OSError as err:
+        print(f"{crayons.yellow(f'OS error: {err}', bold=True)}")
+    except Exception as err:
+        print(f"{crayons.yellow(f'Unexpected {err=}, {type(err)=}', bold=True)}")
     finally:
-        print("test agent process finished")
+        print(f"{crayons.yellow('test agent process finished', bold=True)}")
         if args.tensorboard_logger:
             writer.close()
+        playerEval.log.close()

@@ -1,23 +1,31 @@
-from __future__ import division
-from math import pi as PI
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
 import numpy as np
 import torch
-from torch.autograd import Variable
 import json
-import logging
+import spdlog as spd
+import math
 
 
-def setup_logger(logger_name, log_file, level=logging.INFO):
-    l = logging.getLogger(logger_name)
-    formatter = logging.Formatter("%(asctime)s : %(message)s")
-    fileHandler = logging.FileHandler(log_file, mode="w")
-    fileHandler.setFormatter(formatter)
-    streamHandler = logging.StreamHandler()
-    streamHandler.setFormatter(formatter)
+CPU_DEV = torch.device("cpu")
 
-    l.setLevel(level)
-    l.addHandler(fileHandler)
-    l.addHandler(streamHandler)
+
+def setup_spdlogger(args):
+    log = spd.FileLogger(
+        f"fast_logger_{args.env}", f"{args.log_dir}/{args.env}_log", multithreaded=False, truncate=True
+    )
+    log.set_pattern("%H:%M:%S.%f: %v")
+    log.set_level(spd.LogLevel.INFO)
+    log.flush_on(spd.LogLevel.INFO)
+    return log
+
+
+def set_console_spdlog(args):
+    log = spd.ConsoleLogger(f"fast_logger_{args.env}_mon", False, True, True)
+    log.set_pattern("%H:%M:%S.%f: %v")
+    log.set_level(spd.LogLevel.INFO)
+    log.flush_on(spd.LogLevel.INFO)
+    return log
 
 
 def read_config(file_path):
@@ -26,56 +34,13 @@ def read_config(file_path):
     return json_object
 
 
-def norm_col_init(weights, std=1.0):
-    x = torch.randn(weights.size())
-    x *= std / x.square().sum(1, keepdim=True).sqrt()
-    return x
-
-
 def ensure_shared_grads(model, shared_model, gpu=False):
     for param, shared_param in zip(model.parameters(), shared_model.parameters()):
         if shared_param.grad is not None and not gpu:
             return
-        elif not gpu:
-            shared_param._grad = param.grad
+        elif gpu:
+            shared_param._grad = param.grad.to(device=CPU_DEV, non_blocking=True)
+            if not shared_param.grad.bool().any():
+                shared_param._grad = param.grad.to(device=CPU_DEV)
         else:
-            shared_param._grad = param.grad.cpu()
-
-
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
-        weight_shape = list(m.weight.data.size())
-        fan_in = np.prod(weight_shape[1:4])
-        fan_out = np.prod(weight_shape[2:4]) * weight_shape[0]
-        w_bound = np.sqrt(6.0 / (fan_in + fan_out))
-        m.weight.data.uniform_(-w_bound, w_bound)
-        m.bias.data.fill_(0)
-    elif classname.find("Linear") != -1:
-        weight_shape = list(m.weight.data.size())
-        fan_in = weight_shape[1]
-        fan_out = weight_shape[0]
-        w_bound = np.sqrt(6.0 / (fan_in + fan_out))
-        m.weight.data.uniform_(-w_bound, w_bound)
-        m.bias.data.fill_(0)
-
-
-def weights_init_mlp(m):
-    classname = m.__class__.__name__
-    if classname.find("Linear") != -1:
-        m.weight.data.normal_(0, 1)
-        m.weight.data *= 1 / torch.sqrt(m.weight.data.pow(2).sum(1, keepdim=True))
-        if m.bias is not None:
-            m.bias.data.fill_(0)
-
-
-def normal(x, mu, sigma, gpu_id, gpu=False):
-    pi = np.array([PI])
-    if gpu:
-        with torch.cuda.device(gpu_id):
-            pi = torch.from_numpy(pi).float().cuda()
-    else:
-        pi = torch.from_numpy(pi).float()
-    a = (-1 * (x - mu).pow(2) / (2 * sigma)).exp()
-    b = 1 / (2 * sigma * pi.expand_as(sigma)).sqrt()
-    return a * b
+            shared_param._grad = param.grad
