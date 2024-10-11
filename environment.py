@@ -52,7 +52,6 @@ class BipedalEnv(Wrapper):
         self.envid = args.env
 
     def reset_running_stats(self, path):
-        self.obs_rms = RunningMeanStd(shape=self.env.observation_space.shape)
         self.save_running_average(path)
 
     def set_training_on(self):
@@ -82,11 +81,10 @@ class BipedalEnv(Wrapper):
         return self.obs_norm(ob).reshape(1, 24).astype(float32), rew, done, truncated, info
 
     def save_running_average(self, path):
-        for rms, name in zip([self.obs_rms], ["obs_rms"]):
-            with open(f"{path}/{name}_{self.envid}.pkl", "wb") as file_handler:
-                pickle.dump(rms, file_handler, protocol=-1)
+        with open(f"{path}/obs_rms_{self.envid}.pkl", "wb") as file_handler:
+            pickle.dump(self.obs_rms, file_handler, protocol=-1)
 
     def load_running_average(self, path):
-        for name in ["obs_rms"]:
-            with open(f"{path}/{name}_{self.envid}.pkl", "rb") as file_handler:
-                setattr(self, name, pickle.load(file_handler))
+        with open(f"{path}/obs_rms_{self.envid}.pkl", "rb") as file_handler:
+            setattr(self, "obs_rms", pickle.load(file_handler))
+
